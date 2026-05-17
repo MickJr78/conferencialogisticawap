@@ -4,8 +4,8 @@ const EMAILJS_TEMPLATE_ID = 'template_46a6kji';
 const EMAILJS_PUBLIC_KEY = 'jNFc2cEpYhdLLEcYv';
 const EMAILJS_TO_EMAIL = 'dev.juniorbarbosa@gmail.com';
 
-// Substitua os valores acima pelos seus dados do EmailJS.
-// service ID, template ID, public key e destinatário devem ser configurados aqui.
+
+// service ID, template ID, public key e destinatário
 
 if (window.emailjs) {
     emailjs.init(EMAILJS_PUBLIC_KEY);
@@ -914,36 +914,109 @@ class FormularioConferencia {
     async enviarEmailComPdf() {
         if (!this.validarFormulario()) return;
 
-        if (!window.emailjs) {
-            alert('❌ EmailJS não está carregado. Verifique se o SDK foi incluído corretamente.');
+        // ── Validação do SDK ──────────────────────────────────────────────────
+        if (!window.emailjs?.send) {
+            console.error('[EmailJS] SDK não carregado. window.emailjs.send é undefined.');
+            alert('❌ EmailJS SDK não carregado.\n\nVerifique se o script está acessível:\nhttps://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js');
             return;
         }
 
-        if (!EMAILJS_SERVICE_ID || EMAILJS_SERVICE_ID === 'YOUR_EMAILJS_SERVICE_ID' ||
-            !EMAILJS_TEMPLATE_ID || EMAILJS_TEMPLATE_ID === 'YOUR_EMAILJS_TEMPLATE_ID' ||
-            !EMAILJS_PUBLIC_KEY || EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY' ||
-            !EMAILJS_TO_EMAIL || EMAILJS_TO_EMAIL === 'DESTINATARIO@EXEMPLO.COM') {
-            alert('❌ Configure suas credenciais EmailJS em script.js antes de enviar.');
+        // ── Validação das credenciais ─────────────────────────────────────────
+        let falhaCredencial = null;
+        if (!EMAILJS_SERVICE_ID)                                   falhaCredencial = 'SERVICE_ID';
+        else if (!EMAILJS_TEMPLATE_ID)                             falhaCredencial = 'TEMPLATE_ID';
+        else if (!EMAILJS_PUBLIC_KEY)                              falhaCredencial = 'PUBLIC_KEY';
+        else if (!EMAILJS_TO_EMAIL || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(EMAILJS_TO_EMAIL))
+                                                                    falhaCredencial = 'EMAIL_TO (destinatário inválido)';
+
+        if (falhaCredencial) {
+            console.error(`[EmailJS] Credencial ausente ou inválida: ${falhaCredencial}`);
+            console.table({
+                SERVICE_ID : EMAILJS_SERVICE_ID,
+                TEMPLATE_ID: EMAILJS_TEMPLATE_ID,
+                PUBLIC_KEY : EMAILJS_PUBLIC_KEY ? '***' + EMAILJS_PUBLIC_KEY.slice(-4) : 'VAZIO',
+                EMAIL_TO   : EMAILJS_TO_EMAIL,
+            });
+            alert(`❌ Credencial do EmailJS ausente ou inválida: ${falhaCredencial}\n\nVerifique o arquivo script.js (linhas 2–5).`);
             return;
         }
 
+        console.log('[EmailJS] Credenciais OK:', {
+            SERVICE_ID : EMAILJS_SERVICE_ID,
+            TEMPLATE_ID: EMAILJS_TEMPLATE_ID,
+            PUBLIC_KEY : '***' + (EMAILJS_PUBLIC_KEY?.slice(-4) ?? ''),
+            EMAIL_TO   : EMAILJS_TO_EMAIL,
+        });
+
+        // ── Inicializa o SDK (idempotente, mas garante ordem de execução) ─────
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+
+        // ── Monta os dados do formulário ──────────────────────────────────────
         const dados = this.obterDadosConferencia();
+
+        console.log('[EmailJS] Dados da conferência:', {
+            tipoOperacao    : dados.tipoOperacao,
+            nomeConferente  : dados.nomeConferente,
+            data            : dados.data,
+            dataHora        : dados.dataHora,
+            totalProdutos   : dados.resumoFinal.length,
+            resumoPreview   : dados.resumoFinal.map(p => `${p.codigo} = ${p.total} cx`).join(', '),
+            fotoCarreta     : dados.fotoCarreta ?? 'sem foto',
+            fotoDataUrlSize : dados.fotoDataUrl ? `${(dados.fotoDataUrl.length / 1024).toFixed(1)} KB` : '0 KB',
+        });
+
+        // ── Monta o templateParams com as chaves do template do EmailJS ────────
         const templateParams = {
-            from_name: dados.nomeConferente,
-            tipo_operacao: dados.tipoOperacao,
-            message: this.gerarCorpoEmailParaEmailJS(dados),
-            data: dados.data,
-            data_hora: dados.dataHora,
-            foto_data_url: dados.fotoDataUrl || '',
+            from_name     : dados.nomeConferente,
+            tipo_operacao : dados.tipoOperacao,
+            message       : this.gerarCorpoEmailParaEmailJS(dados),
+            data          : dados.data,
+            data_hora     : dados.dataHora,
+            foto_data_url : dados.fotoDataUrl || '',
+            // subject pode ser definido no próprio painel do EmailJS; enviar vazio evita erro 400
         };
 
+        // ── Envia ─────────────────────────────────────────────────────────────
         try {
-            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
-            alert('✅ Relatório enviado com sucesso. O formulário será reiniciado.');
+            const response = await emailjs.send(
+                EMAILJS_SERVICE_ID,
+                EMAILJS_TEMPLATE_ID,
+                templateParams,
+                EMAILJS_PUBLIC_KEY
+            );
+
+            console.log('[EmailJS] ✅ Enviado com sucesso. Status:', response.status, response.text);
+            alert(
+                `✅ Relatório enviado com sucesso!\n\n` +
+                `Destinatário: ${EMAILJS_TO_EMAIL}\n` +
+                `Produtos: ${dados.resumoFinal.length}\n` +
+                `Foto: ${dados.fotoCarreta ?? 'sem foto'}`
+            );
             this.reiniciarFormulario();
+
         } catch (error) {
-            console.error('Erro EmailJS:', error);
-            alert('❌ Falha ao enviar o e-mail via EmailJS. Verifique suas credenciais e tente novamente.');
+            const detalhes = {
+                status  : error?.status ?? 'N/A',
+                text    : error?.text ?? error?.message ?? String(error),
+                response: JSON.stringify(error),
+            };
+            console.error('[EmailJS] ❌ Erro no envio:', detalhes);
+
+            let sugestao = '';
+            if      (detalhes.status === 400) sugestao = 'Erro 400: verifique se o TEMPLATE_ID está correto e se o template existe.';
+            else if (detalhes.status === 401) sugestao = 'Erro 401: PUBLIC_KEY ou SERVICE_ID incorretos.';
+            else if (detalhes.status === 403) sugestao = 'Erro 403: domínio não autorizado (verifique "Allowed Origins" no painel do EmailJS).';
+            else if (detalhes.status === 413) sugestao = 'Erro 413: payload muito grande. Reduza o tamanho da foto.';
+            else if (detalhes.status === 429) sugestao = 'Erro 429: limite de envios excedido. Aguarde alguns minutos.';
+            else if (detalhes.status === 500) sugestao = 'Erro 500: erro temporário do servidor EmailJS. Tente novamente.';
+            else if (error?.message?.includes('Failed to fetch')) sugestao = 'Sem conexão: verifique sua internet ou bloqueio de firewall/corporativo.';
+
+            alert(
+                `❌ Falha ao enviar o e-mail via EmailJS.\n\n` +
+                `HTTP ${detalhes.status}: ${detalhes.text}\n` +
+                (sugestao ? sugestao + '\n\n' : '') +
+                `Verifique o console (F12 → Console) para detalhes completos.`
+            );
         }
     }
 
@@ -1175,6 +1248,31 @@ const Base64 = {
 
 // ==================== INICIALIZAR AO CARREGAR A PÁGINA ====================
 
-document.addEventListener('DOMContentLoaded', () => {
-    const formulario = new FormularioConferencia();
+// Em conexões lentas o SDK do EmailJS pode ainda não estar disponível
+// quando DOMContentLoaded dispara — esperamos até 3 s antes de desistir.
+function aguardarSdkEmailJS(maxTentativas = 10, intervalo = 300) {
+    return new Promise((resolve) => {
+        let tentativas = 0;
+        const tick = () => {
+            if (window.emailjs?.send) {
+                console.log('[EmailJS] SDK carregado, inicializando formulário...');
+                resolve(true);
+            } else if (++tentativas >= maxTentativas) {
+                console.warn('[EmailJS] SDK não carregou após ' + (maxTentativas * intervalo / 1000) + 's — formulário será criado mesmo assim.');
+                resolve(false);
+            } else {
+                setTimeout(tick, intervalo);
+            }
+        };
+        tick();
+    });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const sdkPronto = await aguardarSdkEmailJS();
+    if (!sdkPronto) {
+        // Inicializa mesmo sem SDK; o erro amigável será mostrado no momento do clique
+        console.warn('[EmailJS] SDK indisponível — clique em "Finalizar" gerará alerta com instrução de verificar a conexão.');
+    }
+    new FormularioConferencia();
 });
