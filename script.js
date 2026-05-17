@@ -78,7 +78,7 @@ class Pallet {
                         </div>
                     ` : this.status === 'nao-ok' ? `
                         <div class="campo-quantidade">
-                            <label>Quantidade Real de Caixas *</label>
+                            <label>Quantidade Real de unidades *</label>
                             <input 
                                 type="number" 
                                 min="0" 
@@ -92,7 +92,7 @@ class Pallet {
                         </div>
                     ` : `
                         <div class="campo-quantidade hidden">
-                            <label>Quantidade Real de Caixas *</label>
+                            <label>Quantidade Real de unidades *</label>
                             <input 
                                 type="number" 
                                 min="0" 
@@ -747,7 +747,7 @@ class FormularioConferencia {
                 }
 
                 if (pallet.status === 'nao-ok' && (pallet.quantidadeReal === null || pallet.quantidadeReal === '')) {
-                    alert(`❌ Por favor, informe a Quantidade Real de Caixas para o Pallet ${pallet.numero} do Produto ${produto.codigo}`);
+                    alert(`❌ Por favor, informe a Quantidade Real de unidades para o Pallet ${pallet.numero} do Produto ${produto.codigo}`);
                     return false;
                 }
             }
@@ -814,10 +814,7 @@ class FormularioConferencia {
         ];
 
         dados.resumoFinal.forEach((produto, index) => {
-            linhas.push(`${index + 1}. ${produto['codigo']} - ${produto['descricao']} | NF: ${produto.nf} | Total: ${produto.total} caixas`);
-            (produto.pallets || []).forEach((pallet) => {
-                linhas.push(`   - Pallet ${pallet.numero}: ${pallet.status.toUpperCase()} — ${pallet.quantidade} caixas`);
-            });
+            linhas.push(`${index + 1}. ${produto['codigo']} - ${produto['descricao']} | NF: ${produto.nf} | Total: ${produto.total} unidades`);
         });
 
         if (dados.fotoCarreta) {
@@ -933,6 +930,7 @@ class FormularioConferencia {
         const dados = this.obterDadosConferencia();
         const templateParams = {
             from_name: dados.nomeConferente,
+            tipo_operacao: dados.tipoOperacao,
             message: this.gerarCorpoEmailParaEmailJS(dados),
             data: dados.data,
             data_hora: dados.dataHora,
@@ -973,12 +971,12 @@ class FormularioConferencia {
         doc.setFontSize(10);
 
         dados.resumoFinal.forEach((produto, index) => {
-            const produtoLinha = `${index + 1}. ${produto.codigo} - ${produto.descricao} | NF: ${produto.nf} | Total: ${produto.total} caixas`;
+            const produtoLinha = `${index + 1}. ${produto.codigo} - ${produto.descricao} | NF: ${produto.nf} | Total: ${produto.total} unidades`;
             doc.text(produtoLinha, margin, y);
             y += 6;
 
             produto.pallets.forEach(pallet => {
-                const palletLinha = `   - Pallet ${pallet.numero}: ${pallet.status.toUpperCase()} | ${pallet.quantidade} caixas`;
+                const palletLinha = `   - Pallet ${pallet.numero}: ${pallet.status.toUpperCase()} | ${pallet.quantidade} unidades`;
                 doc.text(palletLinha, margin + 4, y);
                 y += 6;
             });
