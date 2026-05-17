@@ -574,11 +574,12 @@ class FormularioConferencia {
      * @param {number} [tentativa=0]          Número da tentativa (0 a 3)
      */
     comprimirImagem(src, cb, tentativa = 0) {
+        // Configurações otimizadas para email: largura máxima 800px (padrão para exibição em e-mails)
         const CONFIG = [
-            { largura: 1280, qualidade: 0.80 },
-            { largura: 1024, qualidade: 0.55 },
-            { largura:  768, qualidade: 0.35 },
-            { largura:  512, qualidade: 0.15 },
+            { largura: 800, qualidade: 0.85 },   // Qualidade alta para imagens menores
+            { largura: 640, qualidade: 0.65 },   // Equilíbrio bom
+            { largura: 480, qualidade: 0.45 },   // Qualidade média
+            { largura: 320, qualidade: 0.25 },   // Último recurso para imagens muito grandes
         ];
         const cfg = CONFIG[tentativa] || CONFIG[3];
 
@@ -587,6 +588,7 @@ class FormularioConferencia {
             let w = img.naturalWidth;
             let h = img.naturalHeight;
 
+            // Redimensiona mantém proporção, limitando a maior dimensão ao largura configurada
             if (w > cfg.largura || h > cfg.largura) {
                 const escala = cfg.largura / Math.max(w, h);
                 w = Math.round(w * escala);
@@ -603,8 +605,9 @@ class FormularioConferencia {
                 (blob) => {
                     if (!blob) { cb(src); return; }
 
-                    if (blob.size > 500 * 1024 && tentativa < CONFIG.length - 1) {
-                        // Ainda está grande → próxima tentativa (dimensões menores + qualidade menor)
+                    // Limite conservador de 400KB para o blob (base64 será ~530KB, seguro para EmailJS)
+                    if (blob.size > 400 * 1024 && tentativa < CONFIG.length - 1) {
+                        // Ainda está grande → próxima tentativa
                         this.comprimirImagem(src, cb, tentativa + 1);
                         return;
                     }
