@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conferência Logística - Entrada / Expedição / Cross-Docking</title>
+    <link rel="icon" href="/resources/img/wap-600x600.jpg" type="image/jpeg">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+                <div class="header-content">
+                    <div class="header-logo">
+                        <img src="/resources/img/wap-600x600.jpg" alt="Wap Logo" class="logo-wap">
+                        <img src="/resources/img/Logo_WAAW_by_Alok.jpg" alt="WAAW Logo" class="logo-waaw">
+                    </div>
+                    <div class="header-text">
+                        <h1>📦 Conferência Logística</h1>
+                        <p class="subtitle">Entrada | Expedição | Cross-Docking</p>
+                    </div>
+                </div>
+        </header>
+        <main class="main-content">
+            <form id="formulario-conferencia">
+                <!-- CABEÇALHO PRINCIPAL -->
+                <section class="section">
+                    <h2 class="section-title">Informações Gerais</h2>
+                    
+                    <div class="form-group-container">
+                        <div class="form-group">
+                            <label for="tipo-operacao">Tipo de Operação *</label>
+                            <select id="tipo-operacao" required>
+                                <option value="">-- Selecione --</option>
+                                <option value="entrada">Entrada</option>
+                                <option value="expedicao">Expedição</option>
+                                <option value="cross-docking">Cross-Docking</option>
+                            </select>
+                            <span class="error-message"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="nome-conferente">Nome do Conferente *</label>
+                            <input 
+                                type="text" 
+                                id="nome-conferente" 
+                                placeholder="Digite seu nome" 
+                                required
+                            >
+                            <span class="error-message"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="data-conferencia">Data *</label>
+                            <input 
+                                type="date" 
+                                id="data-conferencia" 
+                                lang="pt-BR"
+                                required
+                            >
+                            <span class="error-message"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- BLOCO DE PRODUTOS (REPETÍVEL) -->
+                <section class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Produtos</h2>
+                    </div>
+
+                    <div id="container-produtos"></div>
+                    <div class="add-product-bottom">
+                        <button type="button" class="btn btn-primary" id="btn-adicionar-produto-bottom">
+                            ➕ Adicionar Produto
+                        </button>
+                    </div>
+                </section>
+
+                <!-- RESUMO FINAL -->
+                <section class="section">
+                    <h2 class="section-title">Resumo Geral da Conferência</h2>
+                    <div id="resumo-geral" class="resumo-container">
+                        <p class="resumo-empty">Nenhum produto adicionado</p>
+                    </div>
+                </section>
+
+                <!-- FOTO DA CARRETA -->
+                <section class="section">
+                    <h2 class="section-title">Registro Final</h2>
+                    
+                    <div class="form-group">
+                        <label for="foto-carreta">Foto da Carreta Finalizada</label>
+                        <div class="file-input-container">
+                            <input 
+                                type="file" 
+                                id="foto-carreta" 
+                                accept="image/*" 
+                                capture="environment"
+                            >
+                            <label for="foto-carreta" class="file-input-label foto-input-label-wrapper">
+                                📷 Clique para capturar ou selecionar foto
+                            </label>
+                            <div id="foto-preview" class="foto-preview empty"></div>
+                            <div class="foto-remover-wrapper">
+                                <button type="button" class="btn-remover-foto" id="btn-remover-foto" hidden>❌ Remover Foto</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- BOTÕES DE AÇÃO -->
+                <section class="section section-actions">
+                    <button type="submit" id="btn-finalizar-conferencia" class="btn btn-success">✅ Finalizar Conferência</button>
+                    <button type="reset" class="btn btn-secondary">🔄 Limpar Formulário</button>
+                </section>
+            </form>
+
+            <div id="modal-confirmacao" class="modal hidden">
+                <div class="modal-overlay"></div>
+                <div class="modal-content">
+                    <h3>Confirmar Finalização</h3>
+                    <p>Deseja finalizar a conferência e enviar o relatório por e-mail?</p>
+                    <div class="modal-actions">
+                        <button type="button" id="btn-confirmar-envio" class="btn btn-success">Sim, finalizar e enviar relatório</button>
+                        <button type="button" id="btn-cancelar-envio" class="btn btn-secondary">Não, voltar à conferência</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Sistema de Conferência Logística. Todos os direitos reservados.</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-s4+DrpHY9b9VLKcE/HSpE+7R8/3XJ/lZ0IDjrbVuaBpPtdgAXy4qLG0BQp3ZSe8/njCDc0KP5HC5rH4Py5FvUw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
